@@ -16,8 +16,8 @@ RKBQA inserts an optional single correction step between logical-form generation
 | `train_pred_best_k_llama3.py` | Load Llama-3.1-8B-Instruct and a LoRA adapter, then run correction for each sample. Prescreening is commented out in this version. |
 | `repair_sexpression.py` | Normalize spacing in the first candidate S-expression of each sample. |
 | `result_analysis/result_analysis.py` | Join execution results, per-question scores, and WebQSP questions into a readable analysis JSON. |
-| `ORS_revision_set.json` | Revision dataset. |
-| `llama3_sft_alpaca_3000questions_allerrors.jsonl` | Supervised fine-tuning dataset. |
+| `data/ORS_revision_set.json` | Revision dataset. |
+| `data/llama3_sft_alpaca_3000questions_allerrors.jsonl` | Supervised fine-tuning dataset. |
 
 The six Python files are preserved from the original experiment scripts. The two `train_pred_best_k_*` files perform **inference**, despite their names; they do not train a model.
 
