@@ -8,7 +8,7 @@ def load_json(path):
         return json.load(f)
 
 def main(beam_file, score_file, test_file, out_file):
-    # ① 读入三个源文件
+    # Read the three source files.
     beam_map   = {x["qid"]: x for x in load_json(beam_file)}
     score_map  = {x["qid"]: x for x in load_json(score_file)}
     q_text_map = {q["QuestionId"]: q["RawQuestion"]
@@ -18,7 +18,7 @@ def main(beam_file, score_file, test_file, out_file):
     for qid, s in score_map.items():
         b = beam_map[qid]
 
-        # ➜ 严格判定：四项全 1 才算正确
+        # Mark as correct only when all four metrics equal 1.
         correct = (
             s.get("precision", 0) == 1.0 and
             s.get("recall",    0) == 1.0 and
@@ -26,10 +26,10 @@ def main(beam_file, score_file, test_file, out_file):
             s.get("hit",       0) == 1
         )
 
-        # 选中哪条 beam：按 execute_index 取
+        # Select the beam candidate using execute_index.
         exe_idx   = b["execute_index"]
         pred_norm = b["pred"]["predictions"][exe_idx]
-        # denormed_pred 是 list，通常长度 1
+        # denormed_pred is a list, usually containing one item.
         pred_denorm = b["denormed_pred"][0] if isinstance(b["denormed_pred"], list) else b["denormed_pred"]
 
         summary.append({
@@ -46,13 +46,13 @@ def main(beam_file, score_file, test_file, out_file):
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ 生成完毕，共 {len(summary)} 条 → {out_file}")
+    print(f"✅ Done: {len(summary)} records written to {out_file}")
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--beam",  required=True, help="beam_test_top_k_predictions.json_gen_sexpr_results.json")
     ap.add_argument("--score", required=True, help="*_official_format.json_new.json")
-    ap.add_argument("--test",  required=True, help="WebQSP.test.json (30% 子集)")
+    ap.add_argument("--test",  required=True, help="WebQSP.test.json (30% subset)")
     ap.add_argument("--out",   default="data/webqsp_test_eval_summary.json")
     args = ap.parse_args()
     main(args.beam, args.score, args.test, args.out)

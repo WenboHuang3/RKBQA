@@ -9,14 +9,14 @@ DIRECT_STATS_JSON = "/mnt/public/algm/wb/data/gpt4o_cot_responses_allerrors_dire
 THRESHOLD = 0.85
 MIN_FREQ  = 5
 prescreen = make_prescreen_func_from_direct(DIRECT_STATS_JSON)
-# ── 1. 路径配置 ───────────────────────────────────────────────────────────
+# ── 1. Path configuration ───────────────────────────────────────────────────────────
 DATA_DIR   = "/mnt/public/algm/wb/ChatKBQA/"
 INPUT_JSON = os.path.join(DATA_DIR, "beam_test_top_k_predictions_with_questions.json")
 OUTPUT_JSON = os.path.join(
     DATA_DIR, "beam_test_top_k_predictions__llama2allerror_withsimplecorrector_revised2_50.json"
 )
 
-# ── 2. 初始化修错 LLM ─────────────────────────────────────────────────────
+# ── 2. Initialize the correction LLM ─────────────────────────────────────────────────────
 # args = dict(
 #     model_name_or_path="/mnt/public/algm/wb/pretrained/Meta-Llama-3.1-8B-Instruct",
 #     adapter_name_or_path="/mnt/public/algm/wb/kbqa/ChatKBQA_SFT/Reading/"
@@ -35,7 +35,7 @@ args = dict(
 )
 repair_model = ChatModel(args)
 
-# ── 3. 通用 prompt 模板（与你之前的一致）───────────────────────────────
+# ── 3. Shared prompt template (same as the previous version) ───────────────────────────────
 INSTRUCT = (
     "You are a semantic-parsing expert. For each example you receive:\n"
     "A natural-language “Question”.\n"
@@ -57,12 +57,12 @@ TAG_RE = re.compile(
 )
 
 def extract_revision(text) -> Optional[str]:
-    """提取 <revised_logic_form>…</revised_logic_form> 内的 S-expression（若存在）。"""
+    """Extract the S-expression inside <revised_logic_form> tags, if present."""
     reply_text = text[0].response_text
     m = TAG_RE.search(reply_text)
     return m.group(1).strip() if m else None
 
-# ── 4. 主循环：对每条样本跑修正 ─────────────────────────────────────────
+# ── 4. Main loop: run correction for each sample ─────────────────────────────────────────
 with open(INPUT_JSON, "r", encoding="utf-8") as f:
     samples = json.load(f)
 skipped, attempted, revised_cnt = 0,0,0
@@ -75,7 +75,7 @@ for sample in tqdm(samples, desc="Repairing"):
         continue
     sample["prescreen_skip"] = False
     attempted += 1
-    # 构造用户 prompt
+    # Build the user prompt.
     user_prompt = (
         f"{INSTRUCT}\n"
         f"Question: {question}\n"
@@ -83,7 +83,7 @@ for sample in tqdm(samples, desc="Repairing"):
     )
     messages = [{"role": "user", "content": user_prompt}]
 
-    # 调用 LLM
+    # Call the LLM.
     reply = repair_model.chat(
         messages,
         num_beams=15,
@@ -92,13 +92,13 @@ for sample in tqdm(samples, desc="Repairing"):
 
 
 
-    # 解析并插入修正
+    # Parse and insert the revision.
     revised = extract_revision(reply)
     if revised:
         sample["predictions"].insert(0, revised)
         revised_cnt += 1
 
-# ── 5. 保存结果 ──────────────────────────────────────────────────────────
+# ── 5. Save the results ──────────────────────────────────────────────────────────
 with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
     json.dump(samples, f, ensure_ascii=False, indent=2)
 

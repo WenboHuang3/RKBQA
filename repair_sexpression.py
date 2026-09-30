@@ -2,10 +2,10 @@
 import json, re, argparse
 
 def repair_sexpr(expr: str) -> str:
-    # 插入括号空格
+    # Add spaces around brackets and parentheses.
     expr = re.sub(r'([\[\]\(\)])', r' \1 ', expr)
 
-    # 逗号：仅在不位于 [...] 内时补空格
+    # Add spaces around commas only when they are outside [...].
     buf, depth = [], 0
     for ch in expr:
         if ch == '[': depth += 1
@@ -13,10 +13,10 @@ def repair_sexpr(expr: str) -> str:
         buf.append(' , ' if ch == ',' and depth == 0 else ch)
     expr = ''.join(buf)
 
-    # 对含有≥2个逗号的 [ ... ]（关系）补齐逗号两侧空格
+    # Add spaces around commas in [ ... ] relations with at least two commas.
     def fix_bracket(m):
         inner = m.group(1)
-        if inner.count(',') >= 2:                 # 判定为关系
+        if inner.count(',') >= 2:                 # Treat this as a relation.
             inner = re.sub(r'\s*,\s*', ' , ', inner)
         return f'[ {inner.strip()} ]'
     expr = re.sub(r'\[([^\[\]]+)\]', fix_bracket, expr)
@@ -26,7 +26,7 @@ def repair_sexpr(expr: str) -> str:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True,
-                        help="beam_test_top_k_predictions.json 的路径")
+                        help="Path to beam_test_top_k_predictions.json")
     parser.add_argument("--output", default="beam_test_top_k_predictions_fixed.json")
     args = parser.parse_args()
 
